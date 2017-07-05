@@ -15,15 +15,19 @@ public class PageDownloader{
 	public void execute(String[] url_list,String[] data) throws SQLException{
 		this.url_list = url_list;
 		this.data = data;
+		int Failnum = 0;
 		for (String url : url_list){
 			if (url.contains(".")&&url.startsWith("http")){
 				System.out.println("pull out info from page:"+url);
 				String[] content = getPageContent(url);
-				if (!(content[0].equals("")&&content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals(""))){
-					for(int k = 0;k<5;k++){
-						if(content[k].equals("")){
-							content[k] = "null";
-						}
+				if (!(content[0].equals("")&&content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals("")))
+				{
+					if(content[0].equals("")||content[1].equals("")||content[2].equals("")||content[3].equals("")||content[4].equals(""))
+					{
+						Failnum++;
+					}
+					if(Failnum == 10){
+						UpdateStateFailtoDB(content);
 					}
 					storeToDB(content);
 				}

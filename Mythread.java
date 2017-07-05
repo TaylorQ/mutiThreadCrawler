@@ -6,7 +6,6 @@ import java.sql.SQLException;
 public class Mythread extends Thread {
 	public void run(){
 		Channeltemplate test = new Channeltemplate();
-		test.execute();
 		try {
 			test.execute();
 		} catch (SQLException e) {
