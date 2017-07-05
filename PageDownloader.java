@@ -1,4 +1,4 @@
-package multiThreadCrawler;
+ï»¿package multiThreadCrawler;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -9,8 +9,8 @@ import org.jsoup.select.Elements;
 
 public class PageDownloader{
 	
-	String[] url_list;//ËùÓĞURL
-	String[] data;//Ä£°æµÄËùÓĞÊı¾İ
+	String[] url_list;//æ‰€æœ‰URL
+	String[] data;//æ¨¡ç‰ˆçš„æ‰€æœ‰æ•°æ®
 	
 	public void execute(String[] url_list,String[] data) throws SQLException{
 		this.url_list = url_list;
@@ -109,6 +109,30 @@ public class PageDownloader{
 	}
 	
 	public void updateModuleFailtoDB(){
-		System.out.println("Î´ÄÜÅÀÈ¡µ½Êı¾İ");
-	}	
+		System.out.println("æœªèƒ½çˆ¬å–åˆ°æ•°æ®");
+	}
+
+	public void UpdateStateFailtoDB(String[] content) throws SQLException{
+		String insertstring = "å¼‚å¸¸";
+		if(content[0].equals("")){
+			insertstring = insertstring+",titleå¼‚å¸¸" ;
+		}
+		if(content[1].equals("")){
+			insertstring = insertstring+",authorå¼‚å¸¸" ;
+		}
+		if(content[2].equals("")){
+			insertstring = insertstring+",pubtimeå¼‚å¸¸" ;
+		}
+		if(content[3].equals("")){
+			insertstring = insertstring+",contentå¼‚å¸¸" ;
+		}
+		if(content[4].equals("")){
+			insertstring = insertstring+",sourceå¼‚å¸¸" ;
+		}
+		DatabaseConnect database5 = new DatabaseConnect();
+		database5.ConnectDb();
+		String sql = "update model set status = '"+insertstring+"'";
+		database5.stmt.execute(sql);
+		database5.close();
+	}
 }
