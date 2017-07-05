@@ -1,4 +1,4 @@
-package multiThreadCrawler;
+﻿package multiThreadCrawler;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -22,7 +22,7 @@ public class Channeltemplate {
 		database1.rs = database1.stmt.executeQuery("select * from model where status = '正常'");
 		ResultSet rs1 = database1.rs;
 		rs1.next();
-		//鑾峰緱妯＄増鏁版嵁
+		//从模板库获取模板
 		do{
 					url_info[0] = rs1.getString(1); //网址
 					System.out.println(url_info[0]);
@@ -59,7 +59,7 @@ public class Channeltemplate {
 		return url_info;
 	}
 	
-	public String getCurrentTime(){//寰楀埌褰撳墠鏃堕棿
+	public String getCurrentTime(){//获取当前时间
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return df.format(new Date());
 	}

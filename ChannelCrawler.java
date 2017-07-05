@@ -1,4 +1,4 @@
-package multiThreadCrawler;
+ï»¿package multiThreadCrawler;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,11 +27,11 @@ public class ChannelCrawler extends Thread {
 	public String[] getURLfromDB(){
 		String[] url_info = new String[4];
 		//read url information from DB
-		//0 Õ¾µãÃû
-		//1 ¿ªÊ¼Ê±¼ä
-		//2 ½áÊøÊ±¼ä
+		//0 ç«™ç‚¹å
+		//1 å¼€å§‹æ—¶é—´
+		//2 ç»“æŸæ—¶é—´
 		//3 url
-		url_info[0] = "ĞÂÀË";
+		url_info[0] = "æ–°æµª";
 		url_info[1] = "2017-07-03 14:09:28";
 		url_info[2] = "2017-07-03 14:09:30";
 		url_info[3] = "http://news.sina.com.cn/society/";
@@ -66,7 +66,7 @@ public class ChannelCrawler extends Thread {
 	}
 	
 	public String getPageContent(String strUrl) {  
-        // ¶ÁÈ¡½á¹ûÍøÒ³  
+        // è¯»å–ç»“æœç½‘é¡µ  
         StringBuffer buffer = new StringBuffer();  
         System.setProperty("sun.net.client.defaultConnectTimeout", "5000");  
         System.setProperty("sun.net.client.defaultReadTimeout", "5000");  
@@ -74,7 +74,7 @@ public class ChannelCrawler extends Thread {
             URL newUrl = new URL(strUrl);  
             HttpURLConnection hConnect = (HttpURLConnection) newUrl  
                     .openConnection();  
-            // ¶ÁÈ¡ÄÚÈİ  
+            // è¯»å–å†…å®¹  
               
             BufferedReader rd = new BufferedReader(new InputStreamReader(  
                     hConnect.getInputStream()));  
@@ -85,15 +85,15 @@ public class ChannelCrawler extends Thread {
             hConnect.disconnect();  
             return buffer.toString().trim();  
         } catch (Exception e) {  
-            // return "´íÎó:¶ÁÈ¡ÍøÒ³Ê§°Ü£¡";  
+            // return "é”™è¯¯:è¯»å–ç½‘é¡µå¤±è´¥ï¼";  
             //  
             return null;
         }  
     }
 	
 	public String getCurrentTime(){
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//ÉèÖÃÈÕÆÚ¸ñÊ½
-		return df.format(new Date());// new Date()Îª»ñÈ¡µ±Ç°ÏµÍ³Ê±¼ä
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//è®¾ç½®æ—¥æœŸæ ¼å¼
+		return df.format(new Date());// new Date()ä¸ºè·å–å½“å‰ç³»ç»Ÿæ—¶é—´
 	}
 	
 	public boolean urlTimeJudge(String last_end_time, String current_time){

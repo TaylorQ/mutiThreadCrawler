@@ -1,4 +1,4 @@
-package multiThreadCrawler;
+﻿package multiThreadCrawler;
 
 import java.sql.*;
 public class DatabaseConnect {
