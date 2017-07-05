@@ -8,8 +8,8 @@ public class Main {
 	public static void main(String[] args) throws SQLException, IOException {
 		// TODO Auto-generated method stub
 		Mythread thread1 = new Mythread();
-		thread1.run();
+		thread1.start();
 		Mythread thread2 = new Mythread();
-		thread2.run();
+		thread2.start();
 	}
 }

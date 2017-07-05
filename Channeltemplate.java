@@ -19,11 +19,12 @@ public class Channeltemplate {
 		DatabaseConnect database1 = new DatabaseConnect();
 		database1.ConnectDb();
 		String[] url_info = new String[15];
-		database1.rs = database1.stmt.executeQuery("select * from model order by rand() limit 1");
+		database1.rs = database1.stmt.executeQuery("select * from model where status = '正常'");
 		ResultSet rs1 = database1.rs;
 		rs1.next();
 		//鑾峰緱妯＄増鏁版嵁
-					url_info[0] = rs1.getString(1); //站点名
+		do{
+					url_info[0] = rs1.getString(1); //网址
 					System.out.println(url_info[0]);
 					url_info[1] = rs1.getString(2); //境内外
 					System.out.println(url_info[1]);
@@ -53,7 +54,8 @@ public class Channeltemplate {
 					System.out.println(url_info[13]);
 					url_info[14] = rs1.getString(15); //来源Xpath
 					System.out.println(url_info[14]);
-					database1.close();
+		}while((!urlTimeJudge(url_info[8], getCurrentTime()))&&rs1.next());		
+		database1.close();
 		return url_info;
 	}
 	
