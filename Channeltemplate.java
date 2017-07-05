@@ -15,14 +15,14 @@ public class Channeltemplate {
 		
 	}
 	
-	public String[] getdatafromDB() throws SQLException{ //杩炴帴鏁版嵁搴擄紝鑾峰緱鏁版嵁
+	public String[] getdatafromDB() throws SQLException{ //从模板库获取模板
 		DatabaseConnect database1 = new DatabaseConnect();
 		database1.ConnectDb();
 		String[] url_info = new String[15];
 		database1.rs = database1.stmt.executeQuery("select * from model where status = '正常'");
 		ResultSet rs1 = database1.rs;
 		rs1.next();
-		//从模板库获取模板
+		//开始顺序获取模板
 		do{
 					url_info[0] = rs1.getString(1); //网址
 					System.out.println(url_info[0]);
@@ -96,10 +96,8 @@ public class Channeltemplate {
 		}
 		return urls;
 	}
-	
-	
 
-	
+	public boolean urlTimeJudge(String last_end_time, String current_time){//时间判定
 		String lastYtoH = last_end_time.substring(0, 14);
 		System.out.println(lastYtoH);
 		String currYtoH = current_time.substring(0, 14);
