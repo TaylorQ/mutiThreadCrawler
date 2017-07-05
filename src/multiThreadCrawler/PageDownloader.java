@@ -1,94 +1,110 @@
 package multiThreadCrawler;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class PageDownloader{
 	
-	String[] module;
-	String[] url_list;
-	String channel_url;
+	String[] url_list;//所有URL
+	String[] data;//模版的所有数据
 	
-	public PageDownloader(String[] module, String channel_url, String[] url_list){
-		this.module = module;
+	public void execute(String[] url_list,String[] data) throws SQLException{
 		this.url_list = url_list;
-		this.channel_url = channel_url;
+		this.data = data;
 		for (String url : url_list){
-			if (url.contains(".")){
+			if (url.contains(".")&&url.startsWith("http")){
 				System.out.println("pull out info from page:"+url);
 				String[] content = getPageContent(url);
-				if (content != null){
+				if (!(content[0].equals("")&&content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals(""))){
+					for(int k = 0;k<5;k++){
+						if(content[k].equals("")){
+							content[k] = "null";
+						}
+					}
 					storeToDB(content);
-				
-					//for test
-					System.out.println("title:"+content[0]);
-					System.out.println("author:"+content[1]);
-					System.out.println("pubtime:"+content[2]);
-					System.out.println("content:"+content[3]);
+				}
+				else{
+					updateModuleFailtoDB();
 				}
 			}
 		}
 	}
 	
 	public String[] getPageContent(String url){
+		String[] content = new String[5];
 		Document doc = null;
 		try {
 			doc = Jsoup.connect(url).get();
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-		String[] content = new String[4];
-		for (int i = 0;i < 4;i++){
-			String[] tag = module[i].split("|");
-			String target = tag[tag.length-1];
-			content[i] = "";
-			Elements temp = doc.getAllElements();
-			for (int ii = 0;ii < tag.length-3;ii++){
-				temp = temp.select(tag[ii]);
+			// TODO Auto-generated catch block
+			for(int i = 0;i<5;i++){
+				content[i] = "";
 			}
-			if (target.startsWith("all")){
-				Elements elems = temp.select(tag[tag.length-2]);
-				target = target.substring(3);
-				if (target.startsWith("attr")){
-					for (int ii = 0;ii < elems.size();ii++){
-						content[i] += elems.get(ii).attr(target).trim()+"\n";
-					}
-				}else if(target.equals("text")){
-					for (int ii = 0;ii < elems.size();ii++){
-						content[i] += elems.get(ii).text().trim()+"\n";
-					}
-				}
-			}else{
-				Element elem = temp.select(tag[tag.length-2]).get(0);
-				if (target.startsWith("attr")){
-					target = target.substring(4);
-					content[i] += elem.attr(target).trim();
-				}else if(target.equals("text")){
-					content[i] += elem.text().trim();
-				}
-			}
+			return content;
 		}
+		
+		String[] title_data = data[10].split("|");
+		Elements content_title = doc.select(title_data[0]);//title
+		String content_title_text = "";
+		if (title_data[1].startsWith("attr")){
+			content_title_text = content_title.attr(title_data[1].substring(4));
+		}else{
+			content_title_text = content_title.text();
+		}
+		content[0] = content_title_text;
+		System.out.println(content_title_text);
+		
+		String[] author_data = data[10].split("|");
+		Elements content_author = doc.select(author_data[0]);//author
+		String content_author_text = "";
+		if (author_data[1].startsWith("attr")){
+			content_author_text = content_author.attr(author_data[1].substring(4));
+		}else{
+			content_author_text = content_author.text();
+		}
+		content[0] = content_author_text;
+		System.out.println(content_author_text);
+		
+		String[] pubtime_data = data[10].split("|");
+		Elements content_pubtime = doc.select(pubtime_data[0]);//pubtime
+		String content_pubtime_text = "";
+		if (pubtime_data[1].startsWith("attr")){
+			content_pubtime_text = content_pubtime.attr(pubtime_data[1].substring(4));
+		}else{
+			content_pubtime_text = content_pubtime.text();
+		}
+		content[0] = content_pubtime_text;
+		System.out.println(content_pubtime_text);
+		
+		String[] content_data = data[10].split("|");
+		Elements content_content = doc.select(content_data[0]);//content
+		String content_content_text = "";
+		if (content_data[1].startsWith("attr")){
+			content_content_text = content_content.attr(content_data[1].substring(4));
+		}else{
+			content_content_text = content_content.text();
+		}
+		content[0] = content_content_text;
+		System.out.println(content_content_text);
+		
 		return content;
 	}
 	
-	public boolean storeToDB(String[] content){
+	public boolean storeToDB(String[] content) throws SQLException{
+		DatabaseConnect database4 = new DatabaseConnect();
+		database4.ConnectDb();
+		String sql = "insert into content (title , author , pubtime , content , source)values('"+content[0]+"' ,'"+content[1]+"' , '"+content[2]+"' ,'"+content[3]+"' ,'"+content[4]+"')";
+		System.out.println(sql);
+		database4.stmt.execute(sql);
+		database4.close();
 		return true;
 	}
 	
-	public void updateModuleFailtoDB(String url, String part){
-		
-	}
-	
-	public static void main(String args[]){
-		String[] url_list = {"http://news.sina.com.cn/s/wh/2017-07-02/doc-ifyhrxtp6424620.shtml"};
-		String[] module = {"title|text", "meta[property=\"article:author\"]|attrcontent",
-				"meta[property=\"article:published_time\"]|attrcontent", "div[id=\"artibody\"]|p|alltext"};
-		PageDownloader pd = new PageDownloader(module, "", url_list);
-	}
-	
+	public void updateModuleFailtoDB(){
+		System.out.println("未能爬取到数据");
+	}	
 }
