@@ -98,6 +98,9 @@ public class Channeltemplate {
 	}
 
 	public boolean urlTimeJudge(String last_end_time, String current_time){//时间判定
+		if(last_end_time == null){
+			return true;
+		}
 		String lastYtoH = last_end_time.substring(0, 14);
 		System.out.println(lastYtoH);
 		String currYtoH = current_time.substring(0, 14);

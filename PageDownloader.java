@@ -1,11 +1,16 @@
 ﻿package multiThreadCrawler;
 
+import java.awt.List;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+
+import redis.clients.jedis.Jedis;
 
 public class PageDownloader{
 	
@@ -95,17 +100,38 @@ public class PageDownloader{
 		content[0] = content_content_text;
 		System.out.println(content_content_text);
 		
+		content[4] = url;
 		return content;
 	}
 	
-	public boolean storeToDB(String[] content) throws SQLException{
-		DatabaseConnect database4 = new DatabaseConnect();
+	public boolean storeToDB(String[] content) {
+		/*DatabaseConnect database4 = new DatabaseConnect();
 		database4.ConnectDb();
 		String sql = "insert into content (title , author , pubtime , content , source)values('"+content[0]+"' ,'"+content[1]+"' , '"+content[2]+"' ,'"+content[3]+"' ,'"+content[4]+"')";
 		System.out.println(sql);
 		database4.stmt.execute(sql);
 		database4.close();
+		*/
+		
+		Jedis jedis;
+		jedis = new Jedis("211.87.229.80",6379);
+		System.out.println(jedis.ping());
+		
+		Map<String,String> map = new HashMap<String,String>();
+		map.put("title", content[0]);
+		map.put("author", content[1]);
+		map.put("pubtime", content[2]);
+		map.put("content", content[3]);
+		//map.put("website", value);
+		jedis.hmset(content[5], map);
+		
+		List rsmap = (List) jedis.hmget(content[5], "title", "author", "pubtime","content");
+        System.out.println(rsmap);  
+		System.out.println("save sucess");
 		return true;
+		
+		
+		
 	}
 	
 	public void updateModuleFailtoDB(){
