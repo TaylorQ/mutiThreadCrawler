@@ -9,6 +9,17 @@ import java.util.Map;
 import org.jsoup.nodes.*;
 import org.jsoup.select.*;
 import org.jsoup.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
+
+import redis.clients.jedis.Jedis;
 
 public class PageDownloader{
 	
@@ -18,6 +29,10 @@ public class PageDownloader{
 	public void execute(String channel_url, String[] url_list, String[] data) throws SQLException{
 		this.url_list = url_list;
 		this.data = data;
+		int Failnum = 0;
+		int id = 0;
+		int tid = 0;
+		String temp = null;
 		for (String url : url_list){
 			if (url.startsWith(channel_url)){
 				System.out.println("pull out info from page:"+url);
@@ -137,10 +152,39 @@ public class PageDownloader{
 		List rsmap = (List) jedis.hmget(content[5], "title", "author", "pubtime","content");
         System.out.println(rsmap);  
 		System.out.println("save sucess");
-
-		*/
-		return true;
+		return true;*/
 		
+		Connection con;
+		String driver = "com.mysql.jdbc.Driver";
+		String url = "jdbc : mysql : //localhost:3306/crawler";
+		String user = "ryan";
+		String password = "1234";
+		try{
+			Class.forName(driver);
+			con = DriverManager.getConnection(url,user,password);
+			if(!con.isClosed()){
+				System.out.println("Succeeded connecting to the Database");
+			}
+			Statement statement = con.createStatement();
+			String sql  = "insert into website(id,tid,website_name,region,country,language,channel_name,status,title,content,pubtime,author,source,crawler_time,url,update_time)"
+					+ " values (id,tid,a[0],a[1],a[2],a[3],a[4],a[9],a[10],a[13],a[12],a[11],a[14],a[7],a[5],a[8]) ";
+			ResultSet rs = statement.executeQuery(sql);
+			
+			
+		
+		} 
+		catch(ClassNotFoundException e) {   
+		     System.out.println("Sorry,can`t find the Driver!");   
+	         e.printStackTrace();   
+		}
+		catch(SQLException e) {
+	         e.printStackTrace();  
+		}
+		catch (Exception e) {
+		     e.printStackTrace();
+		}
+		
+		return true;
 	}
 	
 	public void updateModuleFailtoDB(){
