@@ -19,8 +19,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import redis.clients.jedis.Jedis;
-
 public class PageDownloader{
 	
 	String[] url_list;//所有URL
@@ -41,17 +39,19 @@ public class PageDownloader{
 				{
 					if(content[0].equals("")||content[1].equals("")||content[2].equals("")||content[3].equals("")||content[4].equals(""))
 					{
-						 UpdateFailureCount(channel_url);
-						 if(getFailureCount(channel_url) == 10)
-						 {
-							 UpdateStateFailtoDB(content,channel_url);
-							 continue;
-						 }
+						Failnum++;
 					}
-					for(int i=  0;i<5;i++){
-						System.out.println(content[i]);
+					if(Failnum == 10){
+						UpdateStateFailtoDB(content);
 					}
-					storeToDB(content);
+					id++;
+					Channeltemplate ct = new Channeltemplate();
+					String[] a = ct.getdatafromDB();
+					if(!temp.equals( a[5])){
+						temp = a[5];
+						tid++;
+					}
+					storeToDB(a,id,tid);
 				}
 				else{
 					updateModuleFailtoDB();
@@ -128,37 +128,12 @@ public class PageDownloader{
 		return content;
 	}
 	
-	public boolean storeToDB(String[] content) {//将抽取到的数据存入数据库
-		/*DatabaseConnect database4 = new DatabaseConnect();
-		database4.ConnectDb();
-		String sql = "insert into content (title , author , pubtime , content , source)values('"+content[0]+"' ,'"+content[1]+"' , '"+content[2]+"' ,'"+content[3]+"' ,'"+content[4]+"')";
-		System.out.println(sql);
-		database4.stmt.execute(sql);
-		database4.close();
-		*/
-		
-		/*Jedis jedis;
-		jedis = new Jedis("211.87.229.80",6379);
-		System.out.println(jedis.ping());
-		
-		Map<String,String> map = new HashMap<String,String>();
-		map.put("title", content[0]);
-		map.put("author", content[1]);
-		map.put("pubtime", content[2]);
-		map.put("content", content[3]);
-		//map.put("website", value);
-		jedis.hmset(content[5], map);
-		
-		List rsmap = (List) jedis.hmget(content[5], "title", "author", "pubtime","content");
-        System.out.println(rsmap);  
-		System.out.println("save sucess");
-		return true;*/
-		
+	public boolean storeToDB(String[] content,int id,int tid) {
 		Connection con;
 		String driver = "com.mysql.jdbc.Driver";
-		String url = "jdbc : mysql : //localhost:3306/crawler";
-		String user = "ryan";
-		String password = "1234";
+		String url = "jdbc:mysql://localhost:3306/website";
+		String user = "root";
+		String password = "19951202";
 		try{
 			Class.forName(driver);
 			con = DriverManager.getConnection(url,user,password);
@@ -169,9 +144,6 @@ public class PageDownloader{
 			String sql  = "insert into website(id,tid,website_name,region,country,language,channel_name,status,title,content,pubtime,author,source,crawler_time,url,update_time)"
 					+ " values (id,tid,a[0],a[1],a[2],a[3],a[4],a[9],a[10],a[13],a[12],a[11],a[14],a[7],a[5],a[8]) ";
 			ResultSet rs = statement.executeQuery(sql);
-			
-			
-		
 		} 
 		catch(ClassNotFoundException e) {   
 		     System.out.println("Sorry,can`t find the Driver!");   
@@ -232,7 +204,7 @@ public class PageDownloader{
 		}
 		DatabaseConnect database5 = new DatabaseConnect();
 		database5.ConnectDb();
-		String sql = "update model set status = '"+insertstring+"' where channel_url = '"+url+"'";
+		String sql = "update model set status = '"+insertstring+"'";
 		database5.stmt.execute(sql);
 		database5.close();
 	}
