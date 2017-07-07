@@ -136,7 +136,6 @@ public class Channeltemplate {
 			this.setStartTimetoDB(channel_info[5]);
 			System.out.println("download url list.");
 			String[] URLlist = downloadURLlist(channel_info[5]);
-			System.out.println("get module from DB.");
 			PageDownloader pd = new PageDownloader();
 			pd.execute(channel_info[5],URLlist,channel_info);
 			this.setEndTimetoDB(channel_info[5]);

@@ -10,15 +10,12 @@ import org.jsoup.nodes.*;
 import org.jsoup.select.*;
 import org.jsoup.*;
 
-
-import redis.clients.jedis.Jedis;
-
 public class PageDownloader{
 	
 	String[] url_list;//所有URL
 	String[] data;//模版的所有数据
 	
-	public void execute(String channel_url, String[] url_list,String[] data) throws SQLException{
+	public void execute(String channel_url, String[] url_list, String[] data) throws SQLException{
 		this.url_list = url_list;
 		this.data = data;
 		for (String url : url_list){
@@ -48,19 +45,19 @@ public class PageDownloader{
 		}
 	}
 	
-	public String[] getPageContent(String url){
-		String[] content = new String[5];
+	public String[] getPageContent(String url){//获取页面内容
+		String[] content = new String[5];//用于存储内容的数组
 		Document doc = null;
 		try {
-			doc = Jsoup.connect(url).get();
+			doc = Jsoup.connect(url).get();//jsoup连接
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			for(int i = 0;i<5;i++){
+			for(int i = 0;i<5;i++){//连接失败，返回空数组
 				content[i] = "";
 			}
 			return content;
 		}
 		
+		//基于模板的数据抽取，依次为标题、作者、发布时间、正文
 	    String title_select = data[10].substring(0, data[10].indexOf("|"));
 	    String title_get = data[10].substring(data[10].indexOf("|")+1);
 		Elements content_title = doc.select(title_select);//title
@@ -111,14 +108,12 @@ public class PageDownloader{
 		content[3] = content_content_text;
 		System.out.println(content_content_text);
 		
-		
-		
 		content[4] = url;
 		
 		return content;
 	}
 	
-	public boolean storeToDB(String[] content) {
+	public boolean storeToDB(String[] content) {//将抽取到的数据存入数据库
 		/*DatabaseConnect database4 = new DatabaseConnect();
 		database4.ConnectDb();
 		String sql = "insert into content (title , author , pubtime , content , source)values('"+content[0]+"' ,'"+content[1]+"' , '"+content[2]+"' ,'"+content[3]+"' ,'"+content[4]+"')";
@@ -151,7 +146,8 @@ public class PageDownloader{
 	public void updateModuleFailtoDB(){
 		System.out.println("未能爬取到数据");
 	}
-	public int getFailureCount(String url) throws SQLException{
+	
+	public int getFailureCount(String url) throws SQLException{//获取当前模板的失效次数
 		DatabaseConnect database7 = new DatabaseConnect();
 		database7.ConnectDb();
 		String sql = "select * from model where channel_url = '"+url+"'";
@@ -163,7 +159,8 @@ public class PageDownloader{
 		database7.close();
 		return failurecount;
 	}
-	public void UpdateFailureCount(String url) throws SQLException{
+	
+	public void UpdateFailureCount(String url) throws SQLException{//更新当前模板失效次数
 		DatabaseConnect database6 = new DatabaseConnect();
 		database6.ConnectDb();
 		String sql = "update model set failure_count = failure_count+1 where channel_url = '"+url+"'";
@@ -171,9 +168,8 @@ public class PageDownloader{
 		database6.stmt.execute(sql);
 		database6.close();
 	}
-	
 
-	public void UpdateStateFailtoDB(String[] content , String url) throws SQLException{
+	public void UpdateStateFailtoDB(String[] content , String url) throws SQLException{//更新模板的异常状态
 		String insertstring = "异常";
 		if(content[0].equals("")){
 			insertstring = insertstring+",title异常" ;
