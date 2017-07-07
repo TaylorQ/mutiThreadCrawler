@@ -2,13 +2,14 @@
 
 import java.awt.List;
 import java.io.IOException;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import org.jsoup.nodes.*;
+import org.jsoup.select.*;
+import org.jsoup.*;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 
 import redis.clients.jedis.Jedis;
 
@@ -17,22 +18,26 @@ public class PageDownloader{
 	String[] url_list;//所有URL
 	String[] data;//模版的所有数据
 	
-	public void execute(String[] url_list,String[] data) throws SQLException{
+	public void execute(String channel_url, String[] url_list,String[] data) throws SQLException{
 		this.url_list = url_list;
 		this.data = data;
-		int Failnum = 0;
 		for (String url : url_list){
-			if (url.contains(".")&&url.startsWith("http")){
+			if (url.startsWith(channel_url)){
 				System.out.println("pull out info from page:"+url);
 				String[] content = getPageContent(url);
 				if (!(content[0].equals("")&&content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals("")))
 				{
 					if(content[0].equals("")||content[1].equals("")||content[2].equals("")||content[3].equals("")||content[4].equals(""))
 					{
-						Failnum++;
+						 UpdateFailureCount(channel_url);
+						 if(getFailureCount(channel_url) == 10)
+						 {
+							 UpdateStateFailtoDB(content,channel_url);
+							 continue;
+						 }
 					}
-					if(Failnum == 10){
-						UpdateStateFailtoDB(content);
+					for(int i=  0;i<5;i++){
+						System.out.println(content[i]);
 					}
 					storeToDB(content);
 				}
@@ -56,44 +61,50 @@ public class PageDownloader{
 			return content;
 		}
 		
-	    String[] title_data = data[10].split("|");
-		Elements content_title = doc.select(title_data[0]);//title
+	    String title_select = data[10].substring(0, data[10].indexOf("|"));
+	    String title_get = data[10].substring(data[10].indexOf("|")+1);
+		Elements content_title = doc.select(title_select);//title
 		String content_title_text = "";
-		if (title_data[1].startsWith("attr")){
-			content_title_text = content_title.attr(title_data[1].substring(4));
+		if (title_get.startsWith("attr")){
+			content_title_text = content_title.attr(title_get.substring(4));
 		}else{
 			content_title_text = content_title.text();
 		}
 		content[0] = content_title_text;
 		System.out.println(content_title_text);
 		
-		String[] author_data = data[10].split("|");
-		Elements content_author = doc.select(author_data[0]);//author
+		String author_select = data[11].substring(0, data[11].indexOf("|"));
+		String author_get = data[11].substring(data[11].indexOf("|")+1);
+		Elements content_author = doc.select(author_select);//author
+		System.out.println(content_author.size());
+		System.out.println(author_select);
 		String content_author_text = "";
-		if (author_data[1].startsWith("attr")){
-			content_author_text = content_author.attr(author_data[1].substring(4));
+		if (author_get.startsWith("attr")){
+			content_author_text = content_author.attr(author_get.substring(4));
 		}else{
 			content_author_text = content_author.text();
 		}
 		content[1] = content_author_text;
 		System.out.println(content_author_text);
 		
-		String[] pubtime_data = data[10].split("|");
-		Elements content_pubtime = doc.select(pubtime_data[0]);//pubtime
+		String pubtime_select = data[12].substring(0, data[12].indexOf("|"));
+		String pubtime_get = data[12].substring(0, data[12].indexOf("|"));
+		Elements content_pubtime = doc.select(pubtime_select);//pubtime
 		String content_pubtime_text = "";
-		if (pubtime_data[1].startsWith("attr")){
-			content_pubtime_text = content_pubtime.attr(pubtime_data[1].substring(4));
+		if (pubtime_get.startsWith("attr")){
+			content_pubtime_text = content_pubtime.attr(pubtime_get.substring(4));
 		}else{
 			content_pubtime_text = content_pubtime.text();
 		}
 		content[2] = content_pubtime_text;
 		System.out.println(content_pubtime_text);
 		
-		String[] content_data = data[10].split("|");
-		Elements content_content = doc.select(content_data[0]);//content
+		String content_select = data[13].substring(0, data[13].indexOf("|"));
+		String content_get = data[13].substring(0, data[13].indexOf("|"));
+		Elements content_content = doc.select(content_select);//content
 		String content_content_text = "";
-		if (content_data[1].startsWith("attr")){
-			content_content_text = content_content.attr(content_data[1].substring(4));
+		if (content_get.startsWith("attr")){
+			content_content_text = content_content.attr(content_get.substring(4));
 		}else{
 			content_content_text = content_content.text();
 		}
@@ -116,7 +127,7 @@ public class PageDownloader{
 		database4.close();
 		*/
 		
-		Jedis jedis;
+		/*Jedis jedis;
 		jedis = new Jedis("211.87.229.80",6379);
 		System.out.println(jedis.ping());
 		
@@ -131,17 +142,38 @@ public class PageDownloader{
 		List rsmap = (List) jedis.hmget(content[5], "title", "author", "pubtime","content");
         System.out.println(rsmap);  
 		System.out.println("save sucess");
+
+		*/
 		return true;
-		
-		
 		
 	}
 	
 	public void updateModuleFailtoDB(){
 		System.out.println("未能爬取到数据");
 	}
+	public int getFailureCount(String url) throws SQLException{
+		DatabaseConnect database7 = new DatabaseConnect();
+		database7.ConnectDb();
+		String sql = "select * from model where channel_url = '"+url+"'";
+		System.out.println(sql);
+		database7.rs = database7.stmt.executeQuery(sql);
+		ResultSet rs1 =database7.rs; 
+		rs1.next();
+		int failurecount = rs1.getInt(18);
+		database7.close();
+		return failurecount;
+	}
+	public void UpdateFailureCount(String url) throws SQLException{
+		DatabaseConnect database6 = new DatabaseConnect();
+		database6.ConnectDb();
+		String sql = "update model set failure_count = failure_count+1 where channel_url = '"+url+"'";
+		System.out.println(sql);
+		database6.stmt.execute(sql);
+		database6.close();
+	}
+	
 
-	public void UpdateStateFailtoDB(String[] content) throws SQLException{
+	public void UpdateStateFailtoDB(String[] content , String url) throws SQLException{
 		String insertstring = "异常";
 		if(content[0].equals("")){
 			insertstring = insertstring+",title异常" ;
@@ -160,7 +192,7 @@ public class PageDownloader{
 		}
 		DatabaseConnect database5 = new DatabaseConnect();
 		database5.ConnectDb();
-		String sql = "update model set status = '"+insertstring+"'";
+		String sql = "update model set status = '"+insertstring+"' where channel_url = '"+url+"'";
 		database5.stmt.execute(sql);
 		database5.close();
 	}
