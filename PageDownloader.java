@@ -56,7 +56,7 @@ public class PageDownloader{
 			return content;
 		}
 		
-		String[] title_data = data[10].split("|");
+	    String[] title_data = data[10].split("|");
 		Elements content_title = doc.select(title_data[0]);//title
 		String content_title_text = "";
 		if (title_data[1].startsWith("attr")){
@@ -75,7 +75,7 @@ public class PageDownloader{
 		}else{
 			content_author_text = content_author.text();
 		}
-		content[0] = content_author_text;
+		content[1] = content_author_text;
 		System.out.println(content_author_text);
 		
 		String[] pubtime_data = data[10].split("|");
@@ -86,7 +86,7 @@ public class PageDownloader{
 		}else{
 			content_pubtime_text = content_pubtime.text();
 		}
-		content[0] = content_pubtime_text;
+		content[2] = content_pubtime_text;
 		System.out.println(content_pubtime_text);
 		
 		String[] content_data = data[10].split("|");
@@ -97,10 +97,13 @@ public class PageDownloader{
 		}else{
 			content_content_text = content_content.text();
 		}
-		content[0] = content_content_text;
+		content[3] = content_content_text;
 		System.out.println(content_content_text);
 		
+		
+		
 		content[4] = url;
+		
 		return content;
 	}
 	
