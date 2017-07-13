@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jsoup.nodes.*;
 import org.jsoup.select.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.jsoup.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,62 +29,102 @@ public class PageDownloader{
 	String[] template;//模版的所有数据
 	
 
-	final int int_id               = 0;
-	final int int_website_name     = 1;
-	final int int_region           = 2;
-	final int int_country          = 3;
-	final int int_language         = 4;
-	final int int_channel_name     = 5;
-	final int int_channel_url      = 6;
-	final int int_channel_next_url = 7;
-	final int int_url_xpath        = 8;
-	final int int_start_time       = 9;
-	final int int_stop_time        = 10;
-	final int int_status           = 11;
-	final int int_title_xpath      = 12;
-	final int int_author_xpath     = 13;
-	final int int_pubtime_xpath    = 14;
-	final int int_content_xpath    = 15;
-	final int int_source_xpath      = 16;
+	final static int int_id               = 0;
+	final static int int_website_name     = 1;
+	final static int int_region           = 2;
+	final static int int_country          = 3;
+	final static int int_language         = 4;
+	final static int int_channel_name     = 5;
+	final static int int_channel_url      = 6;
+	final static int int_channel_next_url = 7;
+	final static int int_url_xpath        = 8;
+	final static int int_start_time       = 9;
+	final static int int_stop_time        = 10;
+	final static int int_status           = 11;
+	final static int int_title_xpath      = 12;
+	final static int int_author_xpath     = 13;
+	final static int int_pubtime_xpath    = 14;
+	final static int int_content_xpath    = 15;
+	final static int int_source_xpath     = 16;
+	final static int int_fail_count       = 17;
 	
-	public void execute(String[] url_list, String[] template) throws SQLException{
+	private int id;
+	private static Logger infologger = Logger.getLogger("infoLogger");
+	private static Logger errorlogger = Logger.getLogger("errorLogger");
+	
+	public PageDownloader(int id){
+		this.id = id;
+	}
+	
+	public int execute(String[] url_list, String[] template){
 		this.url_list = url_list;
 		this.template = template;
-		int Failnum = getFailureCount(template[int_channel_url]);
-		DatabaseConnect database9 = new DatabaseConnect();
-		database9.ConnectDb();
-		for (String url : url_list){
-			if (url.startsWith(template[int_channel_url])&&url.endsWith("html")
-					&&!database9.stmt.executeQuery("select * from url where url = '"+url+"'").first()){
-				System.out.println("pull out info from page:"+url);
-				String[] content = getPageContent(url);
-				if (!(content[0].equals("")&&content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals("")))
-				{
-					if(content[0].equals("")||content[1].equals("")||content[2].equals("")||content[3].equals("")||content[4].equals(""))
-					{
-						Failnum++;
-						if(Failnum >= 10){
-							break;
-						}
-					}
-					storeToDB(content);
-				}else{
-					System.out.println("Fail to craw this page.");
-				}
-				String sql = "insert into url (tid,url) values ('"+template[int_id]+"','"+url+"')";
-				database9.stmt.executeUpdate(sql);
-			}			
+		int craw_count = 0;
+		int Failnum = Integer.parseInt(template[int_fail_count]);
+		DatabaseConnect database = new DatabaseConnect();
+		database.ConnectDb();
+		try{
+			for (String url : url_list){
+				if (url.startsWith("http")&&(url.endsWith("html")||url.endsWith("htm")||(url.charAt(url.length()-1)<='9'&&url.charAt(url.length()-1)>='0')))
+						if(!database.stmt.executeQuery("select * from url where url = '"+url+"'").first()){
+							infologger.info("[cp"+id+"]pull out info from page:"+url);
+							String[] content = getPageContent(url);
+							if (!(content[1].equals("")&&content[2].equals("")&&content[3].equals("")&&content[4].equals("")))
+							{
+								if(content[0].equals("")||content[1].equals("")||content[2].equals("")||content[3].equals("")||content[4].equals(""))
+								{
+									Failnum++;
+									if(Failnum >= 10){
+										break;
+									}
+								}
+								storeToDB(content);
+								craw_count++;
+							}else{
+								infologger.info("[cp"+id+"]Fail to craw:"+url);
+							}
+							String sql = "insert into url (tid,url) values ('"+template[int_id]+"','"+url+"')";
+							database.stmt.executeUpdate(sql);
+						}			
+			}
+		}catch(SQLException e){
+			errorlogger.error("Exception occur when executing pagedownloader.");
 		}
-		database9.close();
 		if (Failnum < 10){
 			UpdateFailureCount(template[int_channel_url],Failnum);
 		}else{
 			UpdateFailureCount(template[int_channel_url],0);
 			UpdateStateFailtoDB(template[int_channel_url]);
 		}
+		database.close();
+		return craw_count;
 	}
 	
-	public String[] getPageContent(String url){//获取页面内容
+	private void UpdateStateFailtoDB(String url) {
+		DatabaseConnect database = new DatabaseConnect();
+		database.ConnectDb();
+		String sql = "update template set status = '异常' where channel_url = '"+url+"'";
+		try {
+			database.stmt.executeUpdate(sql);
+		} catch (SQLException e) {
+			errorlogger.error("Exception occur when setting status to DB.");
+		}
+		database.close();
+	}
+
+	private void UpdateFailureCount(String url, int failnum) {
+		DatabaseConnect database = new DatabaseConnect();
+		database.ConnectDb();
+		String sql = "update template set failure_count = '"+failnum+"' where channel_url = '"+url+"'";
+		try {
+			database.stmt.executeUpdate(sql);
+		} catch (SQLException e) {
+			errorlogger.error("Exception occur when setting failnum to DB.");
+		}
+		database.close();		
+	}
+
+	private String[] getPageContent(String url){//获取页面内容
 		String[] content = new String[7];//用于存储内容的数组
 		Document doc = null;
 		try {
@@ -106,7 +148,7 @@ public class PageDownloader{
 				content_title_text = content_title.text();
 			}
 			content[0] = content_title_text;
-			System.out.println(content_title_text);
+			System.out.println("[cp"+id+"]"+content_title_text);
 		}else{
 			content[0] = "";
 		}
@@ -122,7 +164,7 @@ public class PageDownloader{
 				content_author_text = content_author.text();
 			}
 			content[3] = content_author_text;
-			System.out.println(content_author_text);
+			System.out.println("[cp"+id+"]"+content_author_text);
 		}else{
 			content[3] = "";
 		}
@@ -137,8 +179,11 @@ public class PageDownloader{
 			}else{
 				content_pubtime_text = content_pubtime.text();
 			}
-			content[2] = content_pubtime_text;
-			System.out.println(content_pubtime_text);
+			content[2] = content_pubtime_text
+					.replaceAll("年", "-")
+					.replaceAll("月", "-")
+					.replaceAll("日", "");
+			System.out.println("[cp"+id+"]"+content_pubtime_text);
 		}else{
 			content[2] = "";
 		}
@@ -154,7 +199,7 @@ public class PageDownloader{
 				content_content_text = content_content.text();
 			}
 			content[1] = content_content_text;
-			System.out.println(content_content_text);
+			System.out.println("[cp"+id+"]"+content_content_text);
 		}else{
 			content[1] = "";
 		}
@@ -170,7 +215,7 @@ public class PageDownloader{
 				content_source_text = content_source.text();
 			}
 			content[4] = content_source_text;
-			System.out.println(content_source_text);
+			System.out.println("[cp"+id+"]"+content_source_text);
 		}else{
 			content[4] = "";
 		}
@@ -182,9 +227,13 @@ public class PageDownloader{
 		return content;
 	}
 	
-	public boolean storeToDB(String[] content) throws SQLException {
-		DatabaseConnect database8 = new DatabaseConnect();
-		database8.ConnectDb();
+	public boolean storeToDB(String[] content){
+		DatabaseConnect database = new DatabaseConnect();
+		database.ConnectDb();
+		for (int i = 0;i < 5;i++){
+			content[i].replaceAll("\\(", "");
+			content[i].replaceAll("\\)", "");
+		}
 		String sql = "insert into website(tid,website_name,region,country,language,channel_name,status,"
 				+ "title,content,pubtime,author,source,crawler_time,url,update_time)"
 				+ " values ('"+template[int_id]+"','"+template[int_website_name]+"','"+template[int_region]
@@ -192,41 +241,13 @@ public class PageDownloader{
 				+ "','"+template[int_status]
 				+ "','"+content[0]+"','"+content[1]+"','"+content[2]+"','"+content[3]+"','"+content[4]
 				+ "','"+content[5]+"','"+content[6]+"','"+getCurrentTime()+"')";
-		System.out.println(sql);
-		database8.stmt.executeUpdate(sql);
-		database8.close();
-		
+		try {
+			database.stmt.execute(sql);
+		} catch (SQLException e) {
+			errorlogger.error("Exception occur when inserting data to DB.");
+		}
+		database.close();
 		return true;
-	}
-	
-	public void UpdateFailureCount(String url, int failnum) throws SQLException{//更新当前模板失效次数
-		DatabaseConnect database6 = new DatabaseConnect();
-		database6.ConnectDb();
-		String sql = "update template set failure_count = "+failnum+" where channel_url = '"+url+"'";
-		System.out.println(sql);
-		database6.stmt.execute(sql);
-		database6.close();
-	}
-	
-	public int getFailureCount(String url) throws SQLException{//获取当前模板的失效次数
-		DatabaseConnect database7 = new DatabaseConnect();
-		database7.ConnectDb();
-		String sql = "select * from template where channel_url = '"+url+"'";
-		System.out.println(sql);
-		database7.rs = database7.stmt.executeQuery(sql);
-		ResultSet rs1 =database7.rs; 
-		rs1.next();
-		int failurecount = rs1.getInt(19);
-		database7.close();
-		return failurecount;
-	}
-
-	public void UpdateStateFailtoDB(String url) throws SQLException{//更新模板的异常状态
-		DatabaseConnect database5 = new DatabaseConnect();
-		database5.ConnectDb();
-		String sql = "update template set status = '异常' where channel_url = '"+url+"'";
-		database5.stmt.execute(sql);
-		database5.close();
 	}
 	
 	public String getCurrentTime(){//获取当前时间

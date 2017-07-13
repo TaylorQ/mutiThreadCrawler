@@ -7,7 +7,6 @@ public class DatabaseConnect {
 	String password = "19951202";
 	Connection conn = null;
 	Statement stmt = null;
-	ResultSet rs = null;
 	public void ConnectDb(){
 		try
 		{
@@ -25,6 +24,7 @@ public class DatabaseConnect {
 				e.printStackTrace();
 		}	
 	}
+	
 	public void close(){
 		try {
 			conn.close();
